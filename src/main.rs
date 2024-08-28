@@ -1,3 +1,13 @@
+use train::train;
+
+pub mod types;
+pub mod inference;
+pub mod dataloader;
+pub mod arch;
+pub mod prng;
+pub mod train;
+
 fn main() {
-    println!("Hello, world!");
+    println!("ig this is a policy net trainer");
+    train();
 }

@@ -40,7 +40,6 @@ impl Loader {
             self.load_batch();
         }
         let datapoint = self.batch[self.current];
-        dbg!(datapoint);
         self.current += 1;
         datapoint
     }

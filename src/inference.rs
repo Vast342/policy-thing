@@ -2,11 +2,23 @@ use std::ops::{AddAssign, Div, Mul};
 
 use crate::{arch::{INPUT_SIZE, OUTPUT_SIZE}, prng::fill_array, types::{datapoint::Datapoint, piece::Piece}};
 const OW_SIZE: usize = INPUT_SIZE * OUTPUT_SIZE;
+#[derive(Clone, Copy, Debug)]
 pub struct PolicyNetwork{
     pub output_weights: [f32; OW_SIZE],
     pub output_biases: [f32; OUTPUT_SIZE],
 }
 impl AddAssign for Box<PolicyNetwork> {
+    fn add_assign(&mut self, rhs: Self) {
+        for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
+            self.output_weights[i] += rhs.output_weights[i];
+        }
+        for i in 0..OUTPUT_SIZE {
+            self.output_biases[i] += rhs.output_biases[i];
+        }
+    }
+}
+
+impl AddAssign for &mut Box<PolicyNetwork> {
     fn add_assign(&mut self, rhs: Self) {
         for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
             self.output_weights[i] += rhs.output_weights[i];
@@ -55,11 +67,16 @@ pub struct PolicyNetworkState{
 
 }*/
 
+pub const PIECE_STEP: usize = 64;
+pub const COLOR_STEP: usize = 64 * 6;
+
 pub fn calculate_index(move_piece: Piece, move_to: usize, piece: Piece, square: usize) -> usize {
-    768 * move_piece.0 as usize * move_to + 64 * piece.0 as usize + square
+    let move_number  = PIECE_STEP * move_piece.piece() as usize + move_to;
+    let input_number = COLOR_STEP * piece.color() as usize + PIECE_STEP * piece.piece() as usize + square;
+    INPUT_SIZE * move_number + input_number
 }
 
-pub fn get_gradient(og_point: Datapoint, network: &PolicyNetwork) -> Box<PolicyNetwork> {
+pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient: &mut Box<PolicyNetwork>) {
     let mut point = og_point;
     let total_visits: f32 = {
         let mut sum = 0.0;
@@ -81,38 +98,38 @@ pub fn get_gradient(og_point: Datapoint, network: &PolicyNetwork) -> Box<PolicyN
             piece_count = 0;
         }
     }
-    let mut sum_gradient = Box::new(PolicyNetwork::empty());
     // for each move
     for i in 0..32 {
         let (mov, visits) = point.moves[i];
-        // get piece-to
-        let piece = mailbox[mov.from() as usize];
-        let to = mov.to();
-        // infer
-        let mut result = network.output_biases[(64 * piece.0 + to) as usize];
-        for piece_index in 0..64 {
-            let this_piece = mailbox[piece_index];
-            if this_piece != Piece(6) {
-                let index = calculate_index(piece, to as usize, this_piece, piece_index);
-                result += network.output_weights[index];
+        if visits != 0 {
+            // get piece-to
+            let piece = mailbox[mov.from() as usize];
+            let to = mov.to();
+            // infer
+            let mut result = network.output_biases[(64 * piece.0 + to) as usize];
+            for piece_index in 0..64 {
+                let this_piece = mailbox[piece_index];
+                if this_piece != Piece(6) {
+                    let index = calculate_index(piece, to as usize, this_piece, piece_index);
+                    result += network.output_weights[index];
+                }
             }
-        }
-        // loss
-        let loss = result - (visits as f32 / total_visits);
-        // calculate gradients
-        let mut gradient = Box::new(PolicyNetwork::empty());
-        gradient.output_biases[(64 * piece.0 + to) as usize] -= loss;
-        for piece_index in 0..64 {
-            let this_piece = mailbox[piece_index];
-            if this_piece != Piece(6) {
-                let index = calculate_index(piece, to as usize, this_piece, piece_index);
-                gradient.output_weights[index] -= loss;
+            // loss
+            let loss = result - (visits as f32 / total_visits);
+            // calculate gradients
+            let mut this_gradient = Box::new(PolicyNetwork::empty());
+            this_gradient.output_biases[(64 * piece.0 + to) as usize] -= loss;
+            for piece_index in 0..64 {
+                let this_piece = mailbox[piece_index];
+                if this_piece != Piece(6) {
+                    let index = calculate_index(piece, to as usize, this_piece, piece_index);
+                    this_gradient.output_weights[index] -= loss;
+                }
             }
+            // add to sum
+            gradient += &mut this_gradient;
         }
-        // add to sum
-        sum_gradient += gradient;
     }
-    sum_gradient
 }
 
 pub fn get_loss(og_point: Datapoint, network: &PolicyNetwork) -> f32 {

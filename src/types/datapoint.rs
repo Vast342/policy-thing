@@ -20,7 +20,6 @@ impl PiecePair {
 }
 
 #[derive(Clone, Copy, Debug)]
-#[repr(C)]
 // size = 160 (0xA0), align = 0x8
 pub struct Datapoint {
     pub occupied: Bitboard,

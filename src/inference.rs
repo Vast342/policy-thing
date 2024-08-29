@@ -133,7 +133,7 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
     }
 }
 
-pub fn get_loss(og_point: Datapoint, network: &PolicyNetwork) -> f32 {
+pub fn get_loss(og_point: Datapoint, network: &Box<PolicyNetwork>) -> f32 {
     let mut point = og_point;
     let total_visits: f32 = {
         let mut sum = 0.0;

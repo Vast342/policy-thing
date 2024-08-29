@@ -1,13 +1,15 @@
 use crate::{arch::{lr, BATCHES_PER_SUPERBATCH, BATCH_SIZE, NUM_SUPERBATCHES, POS_PER_SUPERBATCH}, dataloader::Loader, inference::{get_gradient, get_loss, PolicyNetwork}, types::datapoint::Datapoint};
-use std::{fs::File, io::{BufWriter, Write}, time::Instant};
+use std::{fs::File, io::{BufWriter, Write}, time::Instant, mem::size_of};
 
 pub fn train() {
     // init network
     let mut net = Box::new(PolicyNetwork::rand());
     // data loader
     let mut loader = Loader::new();
+    println!("Total Positions of Data: {}", loader.file_size / size_of::<Datapoint>() as u64);
+    // get single batch to calculate loss with 
     let mut loss_loader = Loader::new();
-    let _point = loss_loader.get_position();
+    loss_loader.get_position();
     let test_batch = loss_loader.batch;
     let start = Instant::now();
     // train
@@ -40,7 +42,7 @@ unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     )
 }
 
-pub fn get_run_loss(batch: &[Datapoint; BATCH_SIZE], net: &PolicyNetwork) -> f32 {
+pub fn get_run_loss(batch: &Box<[Datapoint; BATCH_SIZE]>, net: &Box<PolicyNetwork>) -> f32 {
     let mut loss: f32 = 0.0;
     for position_num in 0..BATCH_SIZE {
         loss += get_loss(batch[position_num], &net).powf(2.0);

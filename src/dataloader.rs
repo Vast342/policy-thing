@@ -2,10 +2,10 @@ use std::{fs::File, io::{Read, Seek, SeekFrom}, mem::{size_of, transmute}};
 use crate::{arch::BATCH_SIZE, types::datapoint::Datapoint};
 
 pub struct Loader {
-    pub batch: [Datapoint; BATCH_SIZE],
+    pub batch: Box<[Datapoint; BATCH_SIZE]>,
     current: usize,
     file: File,
-    file_size: u64,
+    pub file_size: u64,
 }
 
 impl Loader {
@@ -16,7 +16,7 @@ impl Loader {
         
         Self {
             current: BATCH_SIZE, // This ensures load_batch() is called on first get_position()
-            batch: [Datapoint::new(); BATCH_SIZE],
+            batch: Box::new([Datapoint::new(); BATCH_SIZE]),
             file,
             file_size,
         }

@@ -1,24 +1,29 @@
-use std::{fs::File, io::Read, mem::{size_of, transmute}};
+use std::{fs::File, io::{Read, Seek, SeekFrom}, mem::{size_of, transmute}};
 use crate::{arch::BATCH_SIZE, types::datapoint::Datapoint};
 
 pub struct Loader {
-    batch: [Datapoint; BATCH_SIZE],
+    pub batch: [Datapoint; BATCH_SIZE],
     current: usize,
     file: File,
+    file_size: u64,
 }
 
 impl Loader {
     pub fn new() -> Self {
+        let mut file = File::open("test-data.bin").expect("Failed to open file");
+        let file_size = file.seek(SeekFrom::End(0)).expect("Failed to get file size");
+        file.seek(SeekFrom::Start(0)).expect("Failed to reset file position");
+        
         Self {
-            current: BATCH_SIZE,  // This ensures load_batch() is called on first get_position()
+            current: BATCH_SIZE, // This ensures load_batch() is called on first get_position()
             batch: [Datapoint::new(); BATCH_SIZE],
-            file: File::open("test-data.bin").expect("Failed to open file")
+            file,
+            file_size,
         }
     }
 
     pub fn load_batch(&mut self) {
         self.current = 0;
-
         for datapoint in self.batch.iter_mut() {
             let mut buffer = [0u8; size_of::<Datapoint>()];
             match self.file.read_exact(&mut buffer) {
@@ -28,8 +33,10 @@ impl Loader {
                     *datapoint = unsafe { transmute(buffer) };
                 },
                 Err(_) => {
-                    // Fill the rest of the batch with new Datapoints
-                    *datapoint = Datapoint::new();
+                    //println!("Reached end of file, resetting to the beginning");
+                    self.file.seek(SeekFrom::Start(0)).expect("Failed to reset file position");
+                    self.file.read_exact(&mut buffer).expect("Failed to read after reset");
+                    *datapoint = unsafe { transmute(buffer) };
                 }
             }
         }

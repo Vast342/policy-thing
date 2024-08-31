@@ -1,4 +1,4 @@
-use std::ops::{AddAssign, Div, Mul};
+use std::{alloc::{self, Layout}, ops::{AddAssign, Div, Mul}};
 
 use crate::{arch::{INPUT_SIZE, OUTPUT_SIZE}, prng::fill_array, types::{datapoint::Datapoint, piece::Piece}};
 const OW_SIZE: usize = INPUT_SIZE * OUTPUT_SIZE;
@@ -21,7 +21,7 @@ impl AddAssign for Box<PolicyNetwork> {
 impl Div<f32> for Box<PolicyNetwork> {
     type Output = Self;
     fn div(self, rhs: f32) -> Self::Output {
-        let mut net = Box::new(PolicyNetwork::empty());
+        let mut net = PolicyNetwork::empty();
         for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
             net.output_weights[i] = self.output_weights[i] / rhs;
         }
@@ -34,7 +34,7 @@ impl Div<f32> for Box<PolicyNetwork> {
 impl Mul<f32> for Box<PolicyNetwork> {
     type Output = Self;
     fn mul(self, rhs: f32) -> Self::Output {
-        let mut net = Box::new(PolicyNetwork::empty());
+        let mut net = PolicyNetwork::empty();
         for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
             net.output_weights[i] = self.output_weights[i] * rhs;
         }
@@ -45,11 +45,11 @@ impl Mul<f32> for Box<PolicyNetwork> {
     }
 }
 impl PolicyNetwork {
-    pub fn rand() -> Self {
-        Self{output_weights: fill_array(), output_biases: fill_array()}
+    pub fn rand() -> Box<Self> {
+        Box::new(Self{output_weights: fill_array(), output_biases: fill_array()})
     }
-    pub const fn empty() -> Self {
-        Self{output_weights: [0.0; INPUT_SIZE * OUTPUT_SIZE], output_biases: [0.0; OUTPUT_SIZE]}
+    pub fn empty() -> Box<Self> {
+        boxed_and_zeroed()
     }
     pub fn add(&mut self, other: &Box<Self>) {
         for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
@@ -64,6 +64,18 @@ impl PolicyNetwork {
 pub struct PolicyNetworkState{
 
 }*/
+
+// ty Lana and JW
+pub fn boxed_and_zeroed<T>() -> Box<T> {
+    unsafe {
+        let layout = Layout::new::<T>();
+        let ptr = alloc::alloc_zeroed(layout);
+        if ptr.is_null() {
+            alloc::handle_alloc_error(layout);
+        }
+        Box::from_raw(ptr.cast())
+    }
+}
 
 pub const PIECE_STEP: usize = 64;
 pub const COLOR_STEP: usize = 64 * 6;

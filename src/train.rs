@@ -3,7 +3,7 @@ use std::{fs::File, io::{BufWriter, Write}, time::Instant, mem::size_of};
 
 pub fn train() {
     // init network
-    let mut net = Box::new(PolicyNetwork::rand());
+    let mut net = PolicyNetwork::rand();
     // data loader
     let mut loader = Loader::new();
     println!("Total Positions of Data: {}", loader.file_size / size_of::<Datapoint>() as u64);
@@ -17,10 +17,10 @@ pub fn train() {
         let lr = lr(superbatch_num);
         for _batch_num in 0..BATCHES_PER_SUPERBATCH {
             //let batch_start = Instant::now();
-            let mut gradient_sum = Box::new(PolicyNetwork::empty());
+            let mut gradient_sum = PolicyNetwork::empty();
             for _position_num in 0..BATCH_SIZE {
                 let point = loader.get_position();
-                let mut gradient = Box::new(PolicyNetwork::empty());
+                let mut gradient = PolicyNetwork::empty();
                 get_gradient(point, &net, &mut gradient);
                 gradient_sum += gradient;
             }

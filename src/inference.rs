@@ -46,7 +46,10 @@ impl Mul<f32> for Box<PolicyNetwork> {
 }
 impl PolicyNetwork {
     pub fn rand() -> Box<Self> {
-        Box::new(Self{output_weights: fill_array(), output_biases: fill_array()})
+        let mut thing: Box<PolicyNetwork> = boxed_and_zeroed();
+        thing.output_weights = fill_array();
+        thing.output_biases = fill_array();
+        thing
     }
     pub fn empty() -> Box<Self> {
         boxed_and_zeroed()

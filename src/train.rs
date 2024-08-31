@@ -27,11 +27,11 @@ pub fn train() {
             net += gradient_sum / BATCH_SIZE as f32 * lr;
             //println!("Batch {} done | {} pos/sec", batch_num + 1, BATCH_SIZE as f32 / batch_start.elapsed().as_secs_f32());
         }
-        println!("Superbatch {} done | {} pos/sec | loss {}", superbatch_num + 1, (POS_PER_SUPERBATCH * (superbatch_num + 1)) as f32 / start.elapsed().as_secs_f32(), get_run_loss(&test_batch, &net));
+        println!("Superbatch {} done | {} seconds | {} pos/sec | loss {}", superbatch_num + 1, start.elapsed().as_secs_f32(), (POS_PER_SUPERBATCH * (superbatch_num + 1)) as f32 / start.elapsed().as_secs_f32(), get_run_loss(&test_batch, &net));
     }
     // save to a file
     let mut writer = BufWriter::new(File::create("apn_001.pn").expect("couldn't create file"));
-    unsafe { writer.write_all(any_as_u8_slice(&net)).expect("failed to write to file"); }
+    unsafe { writer.write_all(any_as_u8_slice(net.as_ref())).expect("failed to write to file"); }
 }
 
 // thank you stack overflow :)

@@ -3,8 +3,8 @@ pub const INPUT_SIZE: usize = 768;
 // piece-to moves
 pub const OUTPUT_SIZE: usize = 384;
 
-pub const BATCH_SIZE: usize = 512;
-pub const BATCHES_PER_SUPERBATCH: usize = 1024;
+pub const BATCH_SIZE: usize = 2048;
+pub const BATCHES_PER_SUPERBATCH: usize = 2048;
 pub const NUM_SUPERBATCHES: usize = 80;
 pub const POS_PER_SUPERBATCH: usize = BATCHES_PER_SUPERBATCH * BATCH_SIZE;
 pub const TOTAL_POSITIONS: usize = POS_PER_SUPERBATCH * NUM_SUPERBATCHES;

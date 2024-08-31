@@ -33,7 +33,7 @@ impl Loader {
                     *datapoint = unsafe { transmute(buffer) };
                 },
                 Err(_) => {
-                    //println!("Reached end of file, resetting to the beginning");
+                    println!("epoch done");
                     self.file.seek(SeekFrom::Start(0)).expect("Failed to reset file position");
                     self.file.read_exact(&mut buffer).expect("Failed to read after reset");
                     *datapoint = unsafe { transmute(buffer) };

@@ -1,6 +1,7 @@
 /target
 policy-thing
 policy-thing.exe
+policy-thing.pdb
 test-data.bin
 test-data-shuff.bin
 *.pn

@@ -52,6 +52,9 @@ impl Generator {
 
         thing
     }
+    pub fn num(&mut self) -> f32 {
+        (next!(self) as f32 / i16::MAX as f32)
+    }
 }
 
 pub fn fill_array<const SIZE: usize>() -> [f32; SIZE] {

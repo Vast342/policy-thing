@@ -1,6 +1,6 @@
 use std::{alloc::{self, Layout}, ops::{AddAssign, Div, Mul}};
 
-use crate::{arch::{INPUT_SIZE, OUTPUT_SIZE}, prng::fill_array, types::{datapoint::Datapoint, piece::Piece}};
+use crate::{arch::{INPUT_SIZE, OUTPUT_SIZE}, prng::Generator, types::{datapoint::Datapoint, piece::Piece}};
 const OW_SIZE: usize = INPUT_SIZE * OUTPUT_SIZE;
 #[derive(Clone, Copy, Debug)]
 pub struct PolicyNetwork{
@@ -47,8 +47,14 @@ impl Mul<f32> for Box<PolicyNetwork> {
 impl PolicyNetwork {
     pub fn rand() -> Box<Self> {
         let mut thing: Box<PolicyNetwork> = boxed_and_zeroed();
-        thing.output_weights = fill_array();
-        thing.output_biases = fill_array();
+        let mut rng = Generator::new(0xABBAu16 as i16);
+
+        for i in 0..OW_SIZE {
+            thing.output_weights[i] = rng.num();
+        }
+        for i in 0..OUTPUT_SIZE {
+            thing.output_biases[i] = rng.num();
+        } 
         thing
     }
     pub fn empty() -> Box<Self> {

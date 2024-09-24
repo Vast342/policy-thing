@@ -20,9 +20,7 @@ pub fn train() {
             let mut gradient_sum = PolicyNetwork::empty();
             for _position_num in 0..BATCH_SIZE {
                 let point = loader.get_position();
-                let mut gradient = PolicyNetwork::empty();
-                get_gradient(point, &net, &mut gradient);
-                gradient_sum += &gradient;
+                get_gradient(point, &net, &mut gradient_sum);
             }
             gradient_sum /= BATCH_SIZE as f32 / lr;
             net += &gradient_sum;
@@ -47,7 +45,7 @@ unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     )
 }
 
-pub fn get_run_loss(batch: &Box<[Datapoint; BATCH_SIZE]>, net: &Box<PolicyNetwork>) -> f32 {
+pub fn get_run_loss(batch: &Box<[Datapoint]>, net: &Box<PolicyNetwork>) -> f32 {
     let mut loss: f32 = 0.0;
     for position_num in 0..BATCH_SIZE {
         loss += get_loss(batch[position_num], &net).powf(2.0);

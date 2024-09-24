@@ -2,7 +2,7 @@ use std::{fs::File, io::{Read, Seek, SeekFrom}, mem::{size_of, transmute}};
 use crate::{arch::BATCH_SIZE, types::datapoint::Datapoint};
 
 pub struct Loader {
-    pub batch: Box<[Datapoint; BATCH_SIZE]>,
+    pub batch: Box<[Datapoint]>,
     current: usize,
     file: File,
     pub file_size: u64,
@@ -10,13 +10,13 @@ pub struct Loader {
 
 impl Loader {
     pub fn new() -> Self {
-        let mut file = File::open("test-data.bin").expect("Failed to open file");
+        let mut file = File::open("test-data-shuff.bin").expect("Failed to open file");
         let file_size = file.seek(SeekFrom::End(0)).expect("Failed to get file size");
         file.seek(SeekFrom::Start(0)).expect("Failed to reset file position");
-        
+       
         Self {
             current: BATCH_SIZE, // This ensures load_batch() is called on first get_position()
-            batch: Box::new([Datapoint::new(); BATCH_SIZE]),
+            batch: vec![Datapoint::new(); BATCH_SIZE].into_boxed_slice(),
             file,
             file_size,
         }
@@ -33,7 +33,7 @@ impl Loader {
                     *datapoint = unsafe { transmute(buffer) };
                 },
                 Err(_) => {
-                    println!("epoch done");
+                    // println!("epoch done");
                     self.file.seek(SeekFrom::Start(0)).expect("Failed to reset file position");
                     self.file.read_exact(&mut buffer).expect("Failed to read after reset");
                     *datapoint = unsafe { transmute(buffer) };

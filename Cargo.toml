@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 arrayvec = "0.7.6"
+rand = "0.8.5"
+bytemuck = "1.18.0"

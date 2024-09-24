@@ -1,14 +1,19 @@
-use std::{alloc::{self, Layout}, ops::{AddAssign, Div, Mul}};
-
-use crate::{arch::{INPUT_SIZE, OUTPUT_SIZE}, prng::Generator, types::{datapoint::Datapoint, piece::Piece}};
+use std::ops::{AddAssign, DivAssign, Mul};
+use bytemuck::{Pod, Zeroable};
+use rand::Rng;
+use crate::{arch::{INPUT_SIZE, OUTPUT_SIZE}, types::{datapoint::Datapoint, piece::Piece}};
 const OW_SIZE: usize = INPUT_SIZE * OUTPUT_SIZE;
 #[derive(Clone, Copy, Debug)]
 pub struct PolicyNetwork{
     pub output_weights: [f32; OW_SIZE],
     pub output_biases: [f32; OUTPUT_SIZE],
 }
-impl AddAssign for Box<PolicyNetwork> {
-    fn add_assign(&mut self, rhs: Self) {
+
+unsafe impl Pod for PolicyNetwork {}
+unsafe impl Zeroable for PolicyNetwork {}
+
+impl AddAssign<&PolicyNetwork> for Box<PolicyNetwork> {
+    fn add_assign(&mut self, rhs: &PolicyNetwork) {
         for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
             self.output_weights[i] += rhs.output_weights[i];
         }
@@ -18,17 +23,14 @@ impl AddAssign for Box<PolicyNetwork> {
     }
 }
 
-impl Div<f32> for Box<PolicyNetwork> {
-    type Output = Self;
-    fn div(self, rhs: f32) -> Self::Output {
-        let mut net = PolicyNetwork::empty();
+impl DivAssign<f32> for Box<PolicyNetwork> {
+    fn div_assign(&mut self, rhs: f32) {
         for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
-            net.output_weights[i] = self.output_weights[i] / rhs;
+            self.output_weights[i] /= rhs;
         }
         for i in 0..OUTPUT_SIZE {
-            net.output_biases[i] = self.output_biases[i] / rhs;
+            self.output_biases[i] /= rhs;
         }
-        net
     }
 }
 impl Mul<f32> for Box<PolicyNetwork> {
@@ -45,46 +47,35 @@ impl Mul<f32> for Box<PolicyNetwork> {
     }
 }
 impl PolicyNetwork {
+    // Constructs a randomized heap-allocated network
     pub fn rand() -> Box<Self> {
-        let mut thing: Box<PolicyNetwork> = boxed_and_zeroed();
-        let mut rng = Generator::new(0xABBAu16 as i16);
+        let mut rng = rand::thread_rng();
+        let mut network = Box::new(PolicyNetwork {
+            output_weights: [0.0; OW_SIZE],
+            output_biases: [0.0; OUTPUT_SIZE],
+        });
 
-        for i in 0..OW_SIZE {
-            thing.output_weights[i] = rng.num();
+        for weight in network.output_weights.iter_mut() {
+            *weight = rng.gen_range(-1.0..1.0);
         }
-        for i in 0..OUTPUT_SIZE {
-            thing.output_biases[i] = rng.num();
-        } 
-        thing
+
+        for bias in network.output_biases.iter_mut() {
+            *bias = rng.gen_range(-1.0..1.0);
+        }
+
+        network
     }
+
+    // Constructs a zeroed heap-allocated network
     pub fn empty() -> Box<Self> {
-        boxed_and_zeroed()
-    }
-    pub fn add(&mut self, other: &Box<Self>) {
-        for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
-            self.output_weights[i] += other.output_weights[i];
-        }
-        for i in 0..OUTPUT_SIZE {
-            self.output_biases[i] += other.output_biases[i];
-        }
+        // Use bytemuck to create a zeroed instance
+        Box::new(Self::zeroed())
     }
 }
 /* will need for more layers but not rn with my glorified psqts
 pub struct PolicyNetworkState{
 
 }*/
-
-// ty Lana and JW
-pub fn boxed_and_zeroed<T>() -> Box<T> {
-    unsafe {
-        let layout = Layout::new::<T>();
-        let ptr = alloc::alloc_zeroed(layout);
-        if ptr.is_null() {
-            alloc::handle_alloc_error(layout);
-        }
-        Box::from_raw(ptr.cast())
-    }
-}
 
 pub const PIECE_STEP: usize = 64;
 pub const COLOR_STEP: usize = 64 * 6;
@@ -122,6 +113,7 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
             piece_count = 0;
         }
     }
+    let mut results = [0.0; 32];
     // for each move
     for i in 0..32 {
         let (mov, visits) = point.moves[i];
@@ -139,8 +131,28 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
                         result += network.output_weights[index];
                     }
                 }
-                // loss
-                let loss = result - (visits as f32 / total_visits);
+                results[i] = result;
+            } else { break; }
+        }
+    }
+    let mut result_sum = 0.0;
+    // normalize
+    for i in 0..32 {
+        results[i] = results[i].exp();
+        result_sum += results[i];
+    }
+    for i in 0..32 {
+        results[i] /= result_sum;
+    }
+    // loss
+    for i in 0..32 {
+        let (mov, visits) = point.moves[i];
+        if visits != 0 {
+            // get piece-to
+            let piece = mailbox[mov.from() as usize];
+            if piece.piece() < 6 {
+                let to = mov.to();
+                let loss = results[i] - (visits as f32 / total_visits);
                 gradient.output_biases[(64 * piece.0 + to) as usize] -= loss;
                 for piece_index in 0..64 {
                     let this_piece = mailbox[piece_index];
@@ -177,24 +189,42 @@ pub fn get_loss(og_point: Datapoint, network: &Box<PolicyNetwork>) -> f32 {
         }
     }
     let mut sum_loss = 0.0;
+    let mut results = [0.0; 32];
+    // for each move
+    for i in 0..32 {
+        let (mov, _visits) = point.moves[i];
+        // get piece-to
+        let piece = mailbox[mov.from() as usize];
+        if piece.piece() != 6 {
+            let to = mov.to();
+            // infer
+            results[i] = network.output_biases[(64 * piece.0 + to) as usize];
+            for piece_index in 0..64 {
+                let this_piece = mailbox[piece_index];
+                if this_piece != Piece(6) {
+                    let index = calculate_index(piece, to as usize, this_piece, piece_index);
+                    results[i] += network.output_weights[index];
+                }
+            }
+        }
+    }
+    let mut result_sum = 0.0;
+    // normalize
+    for i in 0..32 {
+        results[i] = results[i].exp();
+        result_sum += results[i];
+    }
+    for i in 0..32 {
+        results[i] /= result_sum;
+    }
     // for each move
     for i in 0..32 {
         let (mov, visits) = point.moves[i];
         // get piece-to
         let piece = mailbox[mov.from() as usize];
         if piece.piece() != 6 {
-            let to = mov.to();
-            // infer
-            let mut result = network.output_biases[(64 * piece.0 + to) as usize];
-            for piece_index in 0..64 {
-                let this_piece = mailbox[piece_index];
-                if this_piece != Piece(6) {
-                    let index = calculate_index(piece, to as usize, this_piece, piece_index);
-                    result += network.output_weights[index];
-                }
-            }
             // loss
-            let loss = result - (visits as f32 / total_visits);
+            let loss = results[i] - (visits as f32 / total_visits);
             sum_loss += loss;
         }
     }

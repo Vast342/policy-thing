@@ -22,9 +22,10 @@ pub fn train() {
                 let point = loader.get_position();
                 let mut gradient = PolicyNetwork::empty();
                 get_gradient(point, &net, &mut gradient);
-                gradient_sum += gradient;
+                gradient_sum += &gradient;
             }
-            net += gradient_sum / BATCH_SIZE as f32 * lr;
+            gradient_sum /= BATCH_SIZE as f32 / lr;
+            net += &gradient_sum;
             //println!("Batch {} done | {} pos/sec", batch_num + 1, BATCH_SIZE as f32 / batch_start.elapsed().as_secs_f32());
         }
         println!("Superbatch {} done | {} seconds | {} pos/sec | loss {}", superbatch_num + 1, start.elapsed().as_secs_f32(), (POS_PER_SUPERBATCH * (superbatch_num + 1)) as f32 / start.elapsed().as_secs_f32(), get_run_loss(&test_batch, &net));

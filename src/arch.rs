@@ -5,14 +5,14 @@ pub const OUTPUT_SIZE: usize = 384;
 
 pub const CHECKPOINT_FREQ: usize = 1;
 
-pub const BATCH_SIZE: usize = 2048;
-pub const BATCHES_PER_SUPERBATCH: usize = 2048;
+pub const BATCH_SIZE: usize = 512;
+pub const BATCHES_PER_SUPERBATCH: usize = 512;
 pub const NUM_SUPERBATCHES: usize = 80;
 pub const POS_PER_SUPERBATCH: usize = BATCHES_PER_SUPERBATCH * BATCH_SIZE;
 pub const TOTAL_POSITIONS: usize = POS_PER_SUPERBATCH * NUM_SUPERBATCHES;
 
-pub const START_LR: f32 = 0.001;
-pub const END_LR: f32 = 0.00001;
+pub const START_LR: f32 = 1.0;
+pub const END_LR: f32 = 0.001;
 
 pub fn lr(superbatch: usize) -> f32 {
     let slope = (END_LR - START_LR) / NUM_SUPERBATCHES as f32;

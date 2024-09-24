@@ -4,7 +4,6 @@ pub mod types;
 pub mod inference;
 pub mod dataloader;
 pub mod arch;
-pub mod prng;
 pub mod train;
 
 fn main() {

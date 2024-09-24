@@ -7,7 +7,8 @@ Todo List:
 - [x] Train a first policy "net"
 - [ ] Optimisation
     - [ ] Simplify Box<T> shenanigans to reduce time wasted on copying network
-    - [ ] During Datapoint->mailbox conversion, count how many moves there are and use that instead of 0..32 loops all over the place
+    - [x] During Datapoint->mailbox conversion, count how many moves there are and use that instead of 0..32 loops all over the place
+    - [ ] pop_lsb() loops instead of 0..64 to loop over the board
     - [ ] Anything else that I can find
 - [ ] Better Data Format
     - [ ] Mine is currently bad and inefficient,

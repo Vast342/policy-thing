@@ -6,13 +6,11 @@ Todo List:
 - [x] Barebones Functionality
 - [x] Train a first policy "net"
 - [ ] Optimisation
-    - [ ] Simplify Box<T> shenanigans to reduce time wasted on copying network
-    - [ ] During Datapoint->mailbox conversion, count how many moves there are and use that instead of 0..32 loops all over the place
+    - [ ] Simplify Box<T> shenanigans to reduce time wasted on copying 
+    - [ ] `pop_lsb()` loops instead of `0..64` when looping over board
     - [ ] Anything else that I can find
 - [ ] Better Data Format
-    - [ ] Mine is currently bad and inefficient,
-    - [ ] All Moves represented
-    - [ ] or at least random selection of moves
+    - [ ] N moves in the format (more than 32) and only train positions where legal move count <= N
     - Note: Needs to be done inside Anura's data generation as well
 - [ ] Actual Network Support
     - [ ] Research arch considerations and activation functions generally used

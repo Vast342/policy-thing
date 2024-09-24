@@ -93,10 +93,16 @@ pub fn calculate_index(move_piece: Piece, move_to: usize, piece: Piece, square: 
 
 pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient: &mut Box<PolicyNetwork>) {
     let mut point = og_point;
+    let mut move_count = 0;
     let total_visits: f32 = {
         let mut sum = 0.0;
         for i in 0..32 {
-            sum += point.moves[i].1 as f32;
+            if point.moves[i].1 != 0 {
+                move_count += 1;
+                sum += point.moves[i].1 as f32;
+            } else {
+                break;
+            }
         }
         sum
     };
@@ -115,7 +121,7 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
     }
     let mut results = [0.0; 32];
     // for each move
-    for i in 0..32 {
+    for i in 0..move_count {
         let (mov, visits) = point.moves[i];
         if visits != 0 {
             // get piece-to
@@ -137,15 +143,15 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
     }
     let mut result_sum = 0.0;
     // normalize
-    for i in 0..32 {
+    for i in 0..move_count {
         results[i] = results[i].exp();
         result_sum += results[i];
     }
-    for i in 0..32 {
+    for i in 0..move_count {
         results[i] /= result_sum;
     }
     // loss
-    for i in 0..32 {
+    for i in 0..move_count {
         let (mov, visits) = point.moves[i];
         if visits != 0 {
             // get piece-to
@@ -168,10 +174,16 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
 
 pub fn get_loss(og_point: Datapoint, network: &Box<PolicyNetwork>) -> f32 {
     let mut point = og_point;
+    let mut move_count = 0;
     let total_visits: f32 = {
         let mut sum = 0.0;
         for i in 0..32 {
-            sum += point.moves[i].1 as f32;
+            if point.moves[i].1 != 0 {
+                move_count += 1;
+                sum += point.moves[i].1 as f32;
+            } else {
+                break;
+            }
         }
         sum
     };
@@ -191,7 +203,7 @@ pub fn get_loss(og_point: Datapoint, network: &Box<PolicyNetwork>) -> f32 {
     let mut sum_loss = 0.0;
     let mut results = [0.0; 32];
     // for each move
-    for i in 0..32 {
+    for i in 0..move_count {
         let (mov, _visits) = point.moves[i];
         // get piece-to
         let piece = mailbox[mov.from() as usize];
@@ -210,15 +222,15 @@ pub fn get_loss(og_point: Datapoint, network: &Box<PolicyNetwork>) -> f32 {
     }
     let mut result_sum = 0.0;
     // normalize
-    for i in 0..32 {
+    for i in 0..move_count {
         results[i] = results[i].exp();
         result_sum += results[i];
     }
-    for i in 0..32 {
+    for i in 0..move_count {
         results[i] /= result_sum;
     }
     // for each move
-    for i in 0..32 {
+    for i in 0..move_count {
         let (mov, visits) = point.moves[i];
         // get piece-to
         let piece = mailbox[mov.from() as usize];

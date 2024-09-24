@@ -20,6 +20,7 @@ Todo List:
     - [ ] Implementation
 - [ ] More Features
     - [ ] Extra LR scheduling (just non-linear at least)
+    - [ ] Adam / AdamW
     - [ ] More layers?
     - [ ] Alternate Activation Functions
     - [ ] Maybe support more data formats in the distant future

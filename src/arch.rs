@@ -7,7 +7,7 @@ pub const CHECKPOINT_FREQ: usize = 5;
 
 pub const BATCH_SIZE: usize = 16384;
 pub const BATCHES_PER_SUPERBATCH: usize = 1024;
-pub const NUM_SUPERBATCHES: usize = 300;
+pub const NUM_SUPERBATCHES: usize = 500;
 pub const POS_PER_SUPERBATCH: usize = BATCHES_PER_SUPERBATCH * BATCH_SIZE;
 pub const TOTAL_POSITIONS: usize = POS_PER_SUPERBATCH * NUM_SUPERBATCHES;
 

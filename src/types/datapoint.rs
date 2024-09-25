@@ -28,12 +28,12 @@ pub struct Datapoint {
     // ctm, realistically it should be one bit but bruh
     pub ctm: u8,
     // number of visits on the root node is calculated from the sum of this array's visits
-    // it's the 32 most visited moves out of however many the position has
-    pub moves: [(Move, u16); 32],
+    // it's the 92 most visited moves out of however many the position has
+    pub moves: [(Move, u16); 92],
 }
 
 impl Datapoint {
     pub fn new() -> Self {
-        Self{occupied: Bitboard(0), pieces: [PiecePair(0); 16], ctm: 0, moves: [(Move::NULL_MOVE, 0); 32]}
+        Self{occupied: Bitboard(0), pieces: [PiecePair(0); 16], ctm: 0, moves: [(Move::NULL_MOVE, 0); 92]}
     }
 }

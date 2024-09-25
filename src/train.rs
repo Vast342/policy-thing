@@ -1,4 +1,4 @@
-use crate::{arch::{lr, BATCHES_PER_SUPERBATCH, BATCH_SIZE, CHECKPOINT_FREQ, NUM_SUPERBATCHES, POS_PER_SUPERBATCH}, dataloader::Loader, inference::{get_gradient, get_loss, PolicyNetwork}, types::datapoint::Datapoint};
+use crate::{arch::{lr, BATCHES_PER_SUPERBATCH, BATCH_SIZE, CHECKPOINT_FREQ, NUM_SUPERBATCHES, POS_PER_SUPERBATCH, TOTAL_POSITIONS}, dataloader::Loader, inference::{get_gradient, get_loss, PolicyNetwork}, types::datapoint::Datapoint};
 use std::{fs::File, io::{BufWriter, Write}, time::Instant, mem::size_of};
 
 pub fn train() {
@@ -7,6 +7,7 @@ pub fn train() {
     // data loader
     let mut loader = Loader::new();
     println!("Total Positions of Data: {}", loader.file_size / size_of::<Datapoint>() as u64);
+    println!("Total Epochs: {}", TOTAL_POSITIONS as f64 / (loader.file_size as f64 / size_of::<Datapoint>() as f64));
     // get single batch to calculate loss with 
     let mut loss_loader = Loader::new();
     loss_loader.get_position();
@@ -28,12 +29,12 @@ pub fn train() {
         }
         println!("Superbatch {} done | {} seconds | {} pos/sec | loss {}", superbatch_num + 1, start.elapsed().as_secs_f32(), (POS_PER_SUPERBATCH * (superbatch_num + 1)) as f32 / start.elapsed().as_secs_f32(), get_run_loss(&test_batch, &net));
         if (superbatch_num + 1) % CHECKPOINT_FREQ == 0 {
-            let mut writer = BufWriter::new(File::create(format!("apn_001-{}.pn", superbatch_num + 1)).expect("couldn't create file"));
+            let mut writer = BufWriter::new(File::create(format!("apn_003-{}.pn", superbatch_num + 1)).expect("couldn't create file"));
             unsafe { writer.write_all(any_as_u8_slice(net.as_ref())).expect("failed to write to file"); }
         }
     }
     // save to a file
-    let mut writer = BufWriter::new(File::create("apn_001.pn").expect("couldn't create file"));
+    let mut writer = BufWriter::new(File::create("apn_003.pn").expect("couldn't create file"));
     unsafe { writer.write_all(any_as_u8_slice(net.as_ref())).expect("failed to write to file"); }
 }
 

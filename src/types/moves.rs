@@ -18,14 +18,10 @@
 use std::fmt;
 
 pub static SQUARE_NAMES: [&str; 64] = [
-    "a1","b1","c1","d1","e1","f1","g1","h1",
-    "a2","b2","c2","d2","e2","f2","g2","h2",
-    "a3","b3","c3","d3","e3","f3","g3","h3",
-    "a4","b4","c4","d4","e4","f4","g4","h4",
-    "a5","b5","c5","d5","e5","f5","g5","h5",
-    "a6","b6","c6","d6","e6","f6","g6","h6",
-    "a7","b7","c7","d7","e7","f7","g7","h7",
-    "a8","b8","c8","d8","e8","f8","g8","h8",
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
 ];
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -67,19 +63,23 @@ impl Flag {
 }
 
 impl Move {
-    #[must_use] pub const fn new_unchecked(from: u8, to: u8, flag: u8) -> Self {
+    #[must_use]
+    pub const fn new_unchecked(from: u8, to: u8, flag: u8) -> Self {
         //debug_assert!(from <= 63, "invalid from square {from}");
         //debug_assert!(to <= 63, "invalid to square {to}");
         Self(((flag as u16) << 12) | ((to as u16) << 6) | from as u16)
     }
     pub const NULL_MOVE: Self = Self::new_unchecked(0, 0, 0);
-    #[must_use] pub const fn from(&self) -> u8 {
+    #[must_use]
+    pub const fn from(&self) -> u8 {
         (self.0 & 0b11_1111) as u8
     }
-    #[must_use] pub const fn to(&self) -> u8 {
+    #[must_use]
+    pub const fn to(&self) -> u8 {
         ((self.0 >> 6) & 0b11_1111) as u8
     }
-    #[must_use] pub fn flag(&self) -> Flag {
+    #[must_use]
+    pub fn flag(&self) -> Flag {
         Flag::from_u8((self.0 >> 12) as u8)
     }
     pub fn to_other_string(&self) -> String {

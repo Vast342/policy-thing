@@ -1,6 +1,5 @@
 use super::{bitboard::Bitboard, moves::Move, piece::Piece};
 
-
 #[derive(Clone, Copy, Debug)]
 pub struct PiecePair(pub u8);
 impl PiecePair {
@@ -15,11 +14,14 @@ impl PiecePair {
             self.first()
         } else if n == 1 {
             self.second()
-        } else { panic!("tried getting a piece that don't exist") }
+        } else {
+            panic!("tried getting a piece that don't exist")
+        }
     }
 }
 
 #[derive(Clone, Copy, Debug)]
+#[repr(C)]
 // size = 160 (0xA0), align = 0x8
 pub struct Datapoint {
     pub occupied: Bitboard,
@@ -34,6 +36,11 @@ pub struct Datapoint {
 
 impl Datapoint {
     pub fn new() -> Self {
-        Self{occupied: Bitboard(0), pieces: [PiecePair(0); 16], ctm: 0, moves: [(Move::NULL_MOVE, 0); 92]}
+        Self {
+            occupied: Bitboard(0),
+            pieces: [PiecePair(0); 16],
+            ctm: 0,
+            moves: [(Move::NULL_MOVE, 0); 92],
+        }
     }
 }

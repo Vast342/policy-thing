@@ -1,77 +1,8 @@
-use std::ops::{AddAssign, DivAssign, Mul};
-use bytemuck::{Pod, Zeroable};
-use rand::Rng;
-use crate::{arch::{INPUT_SIZE, OUTPUT_SIZE}, types::{datapoint::Datapoint, piece::Piece}};
-const OW_SIZE: usize = INPUT_SIZE * OUTPUT_SIZE;
-#[derive(Clone, Copy, Debug)]
-pub struct PolicyNetwork{
-    pub output_weights: [f32; OW_SIZE],
-    pub output_biases: [f32; OUTPUT_SIZE],
-}
-
-unsafe impl Pod for PolicyNetwork {}
-unsafe impl Zeroable for PolicyNetwork {}
-
-impl AddAssign<&PolicyNetwork> for Box<PolicyNetwork> {
-    fn add_assign(&mut self, rhs: &PolicyNetwork) {
-        for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
-            self.output_weights[i] += rhs.output_weights[i];
-        }
-        for i in 0..OUTPUT_SIZE {
-            self.output_biases[i] += rhs.output_biases[i];
-        }
-    }
-}
-
-impl DivAssign<f32> for Box<PolicyNetwork> {
-    fn div_assign(&mut self, rhs: f32) {
-        for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
-            self.output_weights[i] /= rhs;
-        }
-        for i in 0..OUTPUT_SIZE {
-            self.output_biases[i] /= rhs;
-        }
-    }
-}
-impl Mul<f32> for Box<PolicyNetwork> {
-    type Output = Self;
-    fn mul(self, rhs: f32) -> Self::Output {
-        let mut net = PolicyNetwork::empty();
-        for i in 0..(INPUT_SIZE * OUTPUT_SIZE) {
-            net.output_weights[i] = self.output_weights[i] * rhs;
-        }
-        for i in 0..OUTPUT_SIZE {
-            net.output_biases[i] = self.output_biases[i] * rhs;
-        }
-        net
-    }
-}
-impl PolicyNetwork {
-    // Constructs a randomized heap-allocated network
-    pub fn rand() -> Box<Self> {
-        let mut rng = rand::thread_rng();
-        let mut network = Box::new(PolicyNetwork {
-            output_weights: [0.0; OW_SIZE],
-            output_biases: [0.0; OUTPUT_SIZE],
-        });
-
-        for weight in network.output_weights.iter_mut() {
-            *weight = rng.gen_range(-1.0..1.0);
-        }
-
-        for bias in network.output_biases.iter_mut() {
-            *bias = rng.gen_range(-1.0..1.0);
-        }
-
-        network
-    }
-
-    // Constructs a zeroed heap-allocated network
-    pub fn empty() -> Box<Self> {
-        // Use bytemuck to create a zeroed instance
-        Box::new(Self::zeroed())
-    }
-}
+use crate::{
+    arch::INPUT_SIZE,
+    net::PolicyNetwork,
+    types::{datapoint::Datapoint, piece::Piece},
+};
 /* will need for more layers but not rn with my glorified psqts
 pub struct PolicyNetworkState{
 
@@ -82,8 +13,9 @@ pub const COLOR_STEP: usize = 64 * 6;
 
 pub fn calculate_index(move_piece: Piece, move_to: usize, piece: Piece, square: usize) -> usize {
     //println!("mp: {}, mt: {}, p: {}, s: {}", move_piece, move_to, piece, square);
-    let move_number  = PIECE_STEP * move_piece.piece() as usize + move_to;
-    let input_number = COLOR_STEP * piece.color() as usize + PIECE_STEP * piece.piece() as usize + square;
+    let move_number = PIECE_STEP * move_piece.piece() as usize + move_to;
+    let input_number =
+        COLOR_STEP * piece.color() as usize + PIECE_STEP * piece.piece() as usize + square;
     let thing = INPUT_SIZE * move_number + input_number;
     //assert!(thing < 294912, "fuck {} {} {} {}", move_piece, move_to, piece, square);
     thing
@@ -91,7 +23,11 @@ pub fn calculate_index(move_piece: Piece, move_to: usize, piece: Piece, square: 
     // 768 * (64 * 5 + 63) + (384 + 64 * 5 + 63)
 }
 
-pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient: &mut Box<PolicyNetwork>) {
+pub fn get_gradient(
+    og_point: Datapoint,
+    network: &Box<PolicyNetwork>,
+    gradient: &mut Box<PolicyNetwork>,
+) {
     let mut point = og_point;
     let total_visits: f32 = {
         let mut sum = 0.0;
@@ -132,7 +68,9 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
                     }
                 }
                 results[i] = result;
-            } else { break; }
+            } else {
+                break;
+            }
         }
     }
     let mut result_sum = 0.0;
@@ -161,7 +99,9 @@ pub fn get_gradient(og_point: Datapoint, network: &Box<PolicyNetwork>, gradient:
                         gradient.output_weights[index] -= loss;
                     }
                 }
-            } else { break; }
+            } else {
+                break;
+            }
         }
     }
 }
